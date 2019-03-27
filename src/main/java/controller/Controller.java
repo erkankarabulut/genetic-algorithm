@@ -27,6 +27,7 @@ import java.awt.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
+import java.util.TimerTask;
 
 public class Controller implements Initializable {
 
@@ -45,6 +46,8 @@ public class Controller implements Initializable {
     private int maxIterationValue;
     private int centerX;
     private int centerY;
+
+    private static Object LOCK = new Object();
 
     private static final ArrayList<Integer> possibilities = new ArrayList<Integer>(){{add(1); add(2); add(3); add(4);}};
     private static final int foodMark = 1;
@@ -83,7 +86,33 @@ public class Controller implements Initializable {
                     System.out.println("Could not find the solution");
                 }else {
                     System.out.println(matrix.toString() + "\n" + individuals.toString() + "\n" + centerX + " - " + centerY + "\n" + bestIndividual.toString());
-                    visualize(matrix, bestIndividual);
+
+                    VisualizationThread visualizationThread = new VisualizationThread(matrix, bestIndividual, centerX, centerY);
+                    for(int i=0; i<bestIndividual.size(); i++){
+                        switch (bestIndividual.get(i)){
+                            case 1:
+                                visualizationThread.setCurrentX(visualizationThread.getCurrentX()-1);
+                                break;
+                            case 2:
+                                visualizationThread.setCurrentY(visualizationThread.getCurrentY()+1);
+                                break;
+                            case 3:
+                                visualizationThread.setCurrentX(visualizationThread.getCurrentX()+1);
+                                break;
+                            case 4:
+                                visualizationThread.setCurrentY(visualizationThread.getCurrentY()-1);
+                                break;
+                        }
+
+                        visualizationThread.run();
+                        try {
+                            Thread.sleep(1000);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+
+                    }
+
                 }
 
             }
@@ -91,36 +120,77 @@ public class Controller implements Initializable {
 
     }
 
-    public void visualize(ArrayList<ArrayList<Integer>> matrix, ArrayList<Integer> solution){
-        BorderPane root = new BorderPane();
+    public class VisualizationThread implements Runnable{
 
-        GridPane grid = new GridPane();
-        grid.setPadding(new Insets(10));
-        grid.setHgap(10);
-        grid.setVgap(10);
+        private ArrayList<ArrayList<Integer>> matrix;
+        private ArrayList<Integer> solution;
+        private int currentX;
+        private int currentY;
+        private Stage primaryStage;
 
-        StackPane[][] screen_buttons = new StackPane[matrix.size()][matrix.size()];
-
-        for (int y=0;y<matrix.size();y++) {
-            for (int x=0;x<matrix.get(y).size();x++) {
-                screen_buttons[y][x] = new StackPane();
-                Rectangle rec = new Rectangle(30,30);
-                rec.setFill(matrix.get(x).get(y) == 0 ? Color.YELLOW : Color.RED);
-                rec.setStyle("-fx-arc-height: 10; -fx-arc-width: 10;");
-                screen_buttons[y][x].getChildren().addAll(rec);
-                grid.add(screen_buttons[y][x], x, y);
-            }
+        public VisualizationThread(ArrayList<ArrayList<Integer>> matrix, ArrayList<Integer> solution, int currentX, int currentY){
+            this.matrix   = matrix;
+            this.solution = solution;
+            this.currentX = currentX;
+            this.currentY = currentY;
+            this.primaryStage = new Stage();
         }
 
-        //container for controls
-        GridPane controls = new GridPane();
+        public void run() {
 
-        root.setCenter(grid);
-        root.setBottom(controls);
-        Scene scene = new Scene(root);
-        Stage primaryStage = new Stage();
-        primaryStage.setScene(scene);
-        primaryStage.show();
+            if(primaryStage.isShowing()){
+                primaryStage.close();
+            }
+
+            BorderPane root = new BorderPane();
+
+            GridPane grid = new GridPane();
+            grid.setPadding(new Insets(10));
+            grid.setHgap(10);
+            grid.setVgap(10);
+
+            StackPane[][] screen_buttons = new StackPane[matrix.size()][matrix.size()];
+
+            for (int y=0;y<matrix.size();y++) {
+                for (int x=0;x<matrix.get(y).size();x++) {
+                    screen_buttons[y][x] = new StackPane();
+                    Rectangle rec = new Rectangle(30,30);
+                    if(x == currentX && y == currentY){
+                        rec.setFill(Color.GREEN);
+                    }else {
+                        rec.setFill(matrix.get(x).get(y) == 0 ? Color.YELLOW : Color.RED);
+                    }
+                    rec.setStyle("-fx-arc-height: 10; -fx-arc-width: 10;");
+                    screen_buttons[y][x].getChildren().addAll(rec);
+                    grid.add(screen_buttons[y][x], x, y);
+                }
+            }
+
+            //container for controls
+            GridPane controls = new GridPane();
+
+            root.setCenter(grid);
+            root.setBottom(controls);
+            Scene scene = new Scene(root);
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+
+        public int getCurrentX() {
+            return currentX;
+        }
+
+        public void setCurrentX(int currentX) {
+            this.currentX = currentX;
+        }
+
+        public int getCurrentY() {
+            return currentY;
+        }
+
+        public void setCurrentY(int currentY) {
+            this.currentY = currentY;
+        }
     }
 
     public void setChangeListeners(){
