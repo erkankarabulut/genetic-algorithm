@@ -4,18 +4,23 @@ import java.util.*;
 
 public class GeneticAlgorithm {
 
-    public ArrayList<Integer> applyGeneticAlgorithm(ArrayList<ArrayList<Integer>> matrix, ArrayList<ArrayList<Integer>> population, int centerX, int centerY, int foodCount){
+    public ArrayList<ArrayList<ArrayList<Integer>>> applyGeneticAlgorithm(ArrayList<ArrayList<Integer>> matrix, ArrayList<ArrayList<Integer>> population, int centerX, int centerY, int foodCount, int iterationCount){
 
-        ArrayList<Integer> bestIndividual = null;
+        ArrayList<ArrayList<ArrayList<Integer>>> result = new ArrayList<ArrayList<ArrayList<Integer>>>();
+        ArrayList<ArrayList<Integer>> bestIndividuals = null;
+        ArrayList<ArrayList<Integer>> bestOfAllPopulations = new ArrayList<ArrayList<Integer>>();
+
+        ArrayList<ArrayList<Integer>> temp = new ArrayList<ArrayList<Integer>>();
+        temp.addAll(population);
+        bestOfAllPopulations.add(findMostAte(temp, matrix, centerX, centerY));
 
         ArrayList<Integer> x;
         ArrayList<Integer> y;
         ArrayList<Integer> newChild;
 
-        int iterationCount = 1000;
         int counter = 0;
 
-        while ((bestIndividual = checkStopCondition(population, matrix, centerX, centerY, foodCount)) == null && counter++ < iterationCount){
+        while ((bestIndividuals = checkStopCondition(population, matrix, centerX, centerY, foodCount)).size() == 0 && counter++ < iterationCount){
 
             ArrayList<ArrayList<Integer>> newPopulation = new ArrayList<ArrayList<Integer>>();
             for(int i=0; i<population.size(); i++){
@@ -32,22 +37,44 @@ public class GeneticAlgorithm {
 
             population.clear();
             population.addAll(newPopulation);
+
+            ArrayList<ArrayList<Integer>> tempList = new ArrayList<ArrayList<Integer>>();
+            tempList.addAll(population);
+            bestOfAllPopulations.add(findMostAte(tempList, matrix, centerX, centerY));
         }
 
-        if(counter >= iterationCount){
-            bestIndividual = null;
-        }
+        result.add(bestIndividuals);
+        result.add(bestOfAllPopulations);
 
-        return bestIndividual;
+        return result;
     }
 
-    public ArrayList<Integer> checkStopCondition(ArrayList<ArrayList<Integer>> population, ArrayList<ArrayList<Integer>> matrix, int centerX, int centerY, int foodCount){
+    public ArrayList<Integer> findMostAte(ArrayList<ArrayList<Integer>> population, ArrayList<ArrayList<Integer>> matrix, int centerX, int centerY){
         ArrayList<Integer> result = null;
+
+        int max = 0;
+        int foodCount = 0;
+        for(int i=0; i<population.size(); i++){
+            int tempFoodCount = fitnessFunction(population.get(i), matrix, centerX, centerY);
+            if(foodCount < tempFoodCount){
+                foodCount = tempFoodCount;
+                max = i;
+            }
+        }
+
+        if(!(population.size() == 0)){
+            result = population.get(max);
+        }
+
+        return result;
+    }
+
+    public ArrayList<ArrayList<Integer>> checkStopCondition(ArrayList<ArrayList<Integer>> population, ArrayList<ArrayList<Integer>> matrix, int centerX, int centerY, int foodCount){
+        ArrayList<ArrayList<Integer>> result = new ArrayList<ArrayList<Integer>>();
 
         for(int i=0; i<population.size(); i++){
             if(foodCount == fitnessFunction(population.get(i), matrix, centerX, centerY)){
-                result = population.get(i);
-                break;
+                result.add(population.get(i));
             }
         }
 
@@ -79,35 +106,45 @@ public class GeneticAlgorithm {
         return result;
     }
 
-    public int fitnessFunction(ArrayList<Integer> individual, ArrayList<ArrayList<Integer>> matrix, int centerX, int centerY){
-        int result = 0;
-        HashMap<Integer, Integer> eatenFoodsIndexes = new HashMap<Integer, Integer>();
+    public boolean checkIfEatenBefore(ArrayList<Integer> xList, ArrayList<Integer> yList, int x, int y){
+        boolean result = false;
 
-        if(matrix.get(centerX).get(centerY) == 1){
-            if(eatenFoodsIndexes.get(centerX) != null){
-                if(!(eatenFoodsIndexes.get(centerX) == centerY)){
-                    result++;
-                    eatenFoodsIndexes.put(centerX, centerY);
-                }
-            }else{
-                result++;
-                eatenFoodsIndexes.put(centerX, centerY);
+        for(int i=0; i<xList.size(); i++){
+            if(xList.get(i) == x && yList.get(i) == y){
+                result = true;
+                break;
             }
         }
 
-        for(int direction : individual){
-            switch (direction){
+        return result;
+    }
+
+    public int fitnessFunction(ArrayList<Integer> individual, ArrayList<ArrayList<Integer>> matrix, int centerX, int centerY){
+        int result = 0;
+        ArrayList<Integer> eatenFoodsX = new ArrayList<Integer>();
+        ArrayList<Integer> eatenFoodsY = new ArrayList<Integer>();
+
+        if(matrix.get(centerX).get(centerY) == 1){
+            if(!checkIfEatenBefore(eatenFoodsX, eatenFoodsY, centerX, centerY)){
+                result++;
+                eatenFoodsX.add(centerX);
+                eatenFoodsY.add(centerY);
+            }
+        }
+
+        for(int i=0; i<individual.size(); i++){
+            switch (individual.get(i)){
                 case 1:
-                    centerX--;
-                    break;
-                case 2:
                     centerY--;
                     break;
+                case 2:
+                    centerX--;
+                    break;
                 case 3:
-                    centerX++;
+                    centerY++;
                     break;
                 case 4:
-                    centerY++;
+                    centerX++;
                     break;
             }
 
@@ -116,14 +153,10 @@ public class GeneticAlgorithm {
             }
 
             if(matrix.get(centerX).get(centerY) == 1){
-                if(eatenFoodsIndexes.get(centerX) != null){
-                    if(!(eatenFoodsIndexes.get(centerX) == centerY)){
-                        result++;
-                        eatenFoodsIndexes.put(centerX, centerY);
-                    }
-                }else{
+                if(!checkIfEatenBefore(eatenFoodsX, eatenFoodsY, centerX, centerY)){
                     result++;
-                    eatenFoodsIndexes.put(centerX, centerY);
+                    eatenFoodsX.add(centerX);
+                    eatenFoodsY.add(centerY);
                 }
             }
         }

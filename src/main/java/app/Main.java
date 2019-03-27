@@ -12,7 +12,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception{
         Parent root = FXMLLoader.load(getClass().getResource("/main/java/ui/sample.fxml"));
         primaryStage.setTitle("Finding Foods With Genetic Algorithm");
-        primaryStage.setScene(new Scene(root, 800, 600));
+        primaryStage.setScene(new Scene(root, 350, 350));
         primaryStage.show();
     }
 
