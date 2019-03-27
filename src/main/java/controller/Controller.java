@@ -17,12 +17,11 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import jdk.nashorn.internal.ir.Labels;
@@ -73,11 +72,11 @@ public class Controller implements Initializable {
 
         setChangeListeners();
 
-        matrixSizeValue         = 10;
+        matrixSizeValue         = 5;
         individualSizeValue     = 10;
         individualCountValue    = 4;
         foodCountValue          = 3;
-        maxIterationValue       = 10000;
+        maxIterationValue       = 50;
         visualizeAllValue       = false;
 
         simulateButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -97,6 +96,14 @@ public class Controller implements Initializable {
                 ArrayList<ArrayList<Integer>> finalPopulation = geneticAlgorithmResults.get(0);
 
                 if(finalPopulation.size() == 0){
+                    final Stage dialog = new Stage();
+                    dialog.initModality(Modality.APPLICATION_MODAL);
+                    VBox dialogVbox = new VBox(20);
+                    dialogVbox.getChildren().add(new Text("Could not find!"));
+                    Scene dialogScene = new Scene(dialogVbox, 300, 30);
+                    dialog.setTitle("Could not find the solution");
+                    dialog.setScene(dialogScene);
+                    dialog.show();
                     System.out.println("Could not find the solution");
                 }else {
 
@@ -104,15 +111,16 @@ public class Controller implements Initializable {
 
                         VisualizeAllThread visualizationThread = new VisualizeAllThread(matrix, bestOfAllPopulations, centerX, centerY);
 
-                        Timeline drawPath = new Timeline(new KeyFrame(Duration.millis(100 * bestOfAllPopulations.get(0).size()), visualizationThread));
+                        System.out.println(bestOfAllPopulations.size() + "\n" + bestOfAllPopulations.toString());
+                        Timeline drawPath = new Timeline(new KeyFrame(Duration.millis(150 * bestOfAllPopulations.get(0).size()), visualizationThread));
                         drawPath.setCycleCount(bestOfAllPopulations.size());
                         drawPath.play();
 
                     }else {
                         ArrayList<Integer> bestOfLastPopulation = geneticAlgorithm.findMostAte(finalPopulation, matrix, centerX, centerY);
-                        VisualizationThread visualizationThread = new VisualizationThread(matrix, bestOfLastPopulation, centerX, centerY, true, 0);
+                        VisualizationThread visualizationThread = new VisualizationThread(matrix, bestOfLastPopulation, centerX, centerY, true, 0, false);
 
-                        Timeline fiveSecondsWonder = new Timeline(new KeyFrame(Duration.millis(100), visualizationThread));
+                        Timeline fiveSecondsWonder = new Timeline(new KeyFrame(Duration.millis(150), visualizationThread));
                         fiveSecondsWonder.setCycleCount(bestOfLastPopulation.size());
                         fiveSecondsWonder.play();
                     }
@@ -143,9 +151,10 @@ public class Controller implements Initializable {
         public void run() {
 
             VisualizationThread visualizationThread = new VisualizationThread(matrix, allPopulations.get(populationIndex), centerX, centerY,
-                    populationIndex != allPopulations.size()-1 ? false : true, populationIndex);
+                    populationIndex != allPopulations.size()-1 ? false : true, populationIndex,
+                    populationIndex == allPopulations.size()-1 ? false : true);
 
-            Timeline drawPath = new Timeline(new KeyFrame(Duration.millis(100), visualizationThread));
+            Timeline drawPath = new Timeline(new KeyFrame(Duration.millis(150), visualizationThread));
             drawPath.setCycleCount(allPopulations.get(populationIndex).size());
             drawPath.play();
 
@@ -178,14 +187,17 @@ public class Controller implements Initializable {
 
         private ArrayList<ArrayList<Integer>> matrix;
         private ArrayList<Integer> solution;
+        private ArrayList<ArrayList<Integer>> visited;
         private int currentX;
         private int currentY;
         private int index;
         private int attempt;
+        private boolean closeAtTheAnd;
         private boolean isSuccessful;
         private Stage primaryStage;
 
-        public VisualizationThread(ArrayList<ArrayList<Integer>> matrix, ArrayList<Integer> solution, int currentX, int currentY, boolean isSuccessful, int attempt){
+        public VisualizationThread(ArrayList<ArrayList<Integer>> matrix, ArrayList<Integer> solution, int currentX, int currentY,
+                                   boolean isSuccessful, int attempt, boolean closeAtTheAnd){
             this.matrix   = matrix;
             this.solution = solution;
             this.currentY = currentY;
@@ -194,6 +206,8 @@ public class Controller implements Initializable {
             this.attempt = attempt;
             this.primaryStage = new Stage();
             this.index = 0;
+            this.closeAtTheAnd = closeAtTheAnd;
+            this.visited = new ArrayList<ArrayList<Integer>>();
         }
 
         public void run() {
@@ -207,11 +221,12 @@ public class Controller implements Initializable {
 
             StackPane[][] screen_buttons = new StackPane[matrix.size()][matrix.size()];
 
+            visited.add(new ArrayList<Integer>(){{add(currentX); add(currentY);}});
             for (int y=0;y<matrix.size();y++) {
                 for (int x=0;x<matrix.get(y).size();x++) {
                     screen_buttons[y][x] = new StackPane();
                     Rectangle rec = new Rectangle(60,60);
-                    if(x == currentX && y == currentY){
+                    if(isVisited(visited, y, x)){
                         if(currentX>=matrix.size() || currentY>=matrix.size()){
                             break;
                         }
@@ -256,6 +271,23 @@ public class Controller implements Initializable {
 
             index++;
 
+            if(closeAtTheAnd && index == solution.size()){
+                primaryStage.close();
+            }
+
+        }
+
+        public boolean isVisited(ArrayList<ArrayList<Integer>> visitedList, int x, int y){
+            boolean result = false;
+
+            for (ArrayList<Integer> temp : visitedList){
+                if(temp.get(0) == x && temp.get(1) == y){
+                    result = true;
+                    break;
+                }
+            }
+
+            return result;
         }
 
         public int getCurrentX() {
@@ -282,7 +314,7 @@ public class Controller implements Initializable {
     public void setChangeListeners(){
 
         matrixSize.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1,100));
-        matrixSize.getValueFactory().setValue(new Integer(10));
+        matrixSize.getValueFactory().setValue(new Integer(5));
         matrixSize.setEditable(true);
 
         individualSize.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1,100));
@@ -298,7 +330,7 @@ public class Controller implements Initializable {
         foodCount.setEditable(true);
 
         maxIteration.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1,Integer.MAX_VALUE));
-        maxIteration.getValueFactory().setValue(new Integer(10000));
+        maxIteration.getValueFactory().setValue(new Integer(50));
         maxIteration.setEditable(true);
 
         visualizeAll.setOnAction(new EventHandler<ActionEvent>() {

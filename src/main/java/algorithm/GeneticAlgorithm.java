@@ -40,6 +40,7 @@ public class GeneticAlgorithm {
 
             ArrayList<ArrayList<Integer>> tempList = new ArrayList<ArrayList<Integer>>();
             tempList.addAll(population);
+
             bestOfAllPopulations.add(findMostAte(tempList, matrix, centerX, centerY));
         }
 
