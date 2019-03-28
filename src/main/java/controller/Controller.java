@@ -120,6 +120,7 @@ public class Controller implements Initializable {
                         ArrayList<Integer> bestOfLastPopulation = geneticAlgorithm.findMostAte(finalPopulation, matrix, centerX, centerY);
                         VisualizationThread visualizationThread = new VisualizationThread(matrix, bestOfLastPopulation, centerX, centerY, true, 0, false);
 
+                        System.out.println(matrix.toString() + "\n" + bestOfLastPopulation.toString() + "\n" + centerY + " - " + centerX);
                         Timeline fiveSecondsWonder = new Timeline(new KeyFrame(Duration.millis(150), visualizationThread));
                         fiveSecondsWonder.setCycleCount(bestOfLastPopulation.size());
                         fiveSecondsWonder.play();

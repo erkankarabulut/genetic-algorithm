@@ -44,6 +44,7 @@ public class GeneticAlgorithm {
             bestOfAllPopulations.add(findMostAte(tempList, matrix, centerX, centerY));
         }
 
+        bestOfAllPopulations.add(findMostAte(bestIndividuals, matrix, centerX, centerY));
         result.add(bestIndividuals);
         result.add(bestOfAllPopulations);
 
